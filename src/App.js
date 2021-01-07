@@ -1,41 +1,34 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { Route, Switch } from 'react-router-dom';
+import { connect } from 'react-redux';
 
 import './App.css';
 
 import Header from './components/header/header.component';
 import HomePage from './pages/homepage/homepage.component';
 import ShopPage from './pages/shop/shop.component';
+import Counter from './pages/counter/counter.component';
 import Authenticate from './pages/authenticate/authenticate.component';
 import { auth, createUserProfileDocument } from './firebase/firebase.utils';
+import { setCurrentUser } from './redux/user/user.actions';
 
 class App extends React.Component {
-  constructor() {
-    super();
-
-    this.state = {
-      currentUser: null,
-    };
-  }
-
   closeAuth = null;
 
   componentDidMount() {
+    const { setCurrentUser } = this.props;
+
     this.closeAuth = auth.onAuthStateChanged(async (userAuth) => {
       if (userAuth) {
         const userRef = await createUserProfileDocument(userAuth);
         userRef.onSnapshot((snapShot) => {
-          this.setState({
-            currentUser: {
-              id: snapShot.id,
-              ...snapShot.data(),
-            },
+          setCurrentUser({
+            id: snapShot.id,
+            ...snapShot.data(),
           });
         });
       } else {
-        this.setState({
-          currentUser: null,
-        });
+        setCurrentUser(null);
       }
     });
   }
@@ -49,25 +42,20 @@ class App extends React.Component {
   render() {
     return (
       <div>
-        <Router>
-          <Header currentUser={this.state.currentUser} />
-          <Switch>
-            <Route path='/' exact>
-              <HomePage />
-            </Route>
-
-            <Route path='/shop' exact>
-              <ShopPage />
-            </Route>
-
-            <Route path='/authenticate' exact>
-              <Authenticate />
-            </Route>
-          </Switch>
-        </Router>
+        <Header />
+        <Switch>
+          <Route path='/' exact component={HomePage} />
+          <Route path='/shop' exact component={ShopPage} />
+          <Route path='/counter' exact component={Counter} />
+          <Route path='/authenticate' exact component={Authenticate} />
+        </Switch>
       </div>
     );
   }
 }
 
-export default App;
+const mapDispatchToProps = {
+  setCurrentUser,
+};
+
+export default connect(null, mapDispatchToProps)(App);
